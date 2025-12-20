@@ -20,6 +20,15 @@ class ForwardDiffusion:
         print(">>Beta range : %f to %f" % (self.beta_start, self.beta_end))
         print(">>Alpha range : %f to %f" % (self.alphas[0].item(), self.alphas[-1].item()))
     
+    def to(self, device):
+        """Move all tensors to the specified device"""
+        self.betas = self.betas.to(device)
+        self.alphas = self.alphas.to(device)
+        self.alpha_bar = self.alpha_bar.to(device)
+        self.sqrt_alpha_bar = self.sqrt_alpha_bar.to(device)
+        self.sqrt_one_minus_alpha_bar = self.sqrt_one_minus_alpha_bar.to(device)
+        return self
+    
     def q_sample(self, x_0 , t, noise=None):
         """
         Sample from the forward diffusion process at timestep t.
@@ -39,8 +48,14 @@ class ForwardDiffusion:
         if noise is None:
             noise = torch.randn_like(x_0)
         
-        sqrt_alpha_bar_t = self.sqrt_alpha_bar[t].reshape(-1, 1)
-        sqrt_one_minus_alpha_bar_t = self.sqrt_one_minus_alpha_bar[t].reshape(-1, 1)
+        # Get dimensions
+        x_dim = x_0.ndim
+        
+        # Create view shape for broadcasting
+        view_shape = [x_0.shape[0]] + [1] * (x_dim - 1)
+        
+        sqrt_alpha_bar_t = self.sqrt_alpha_bar[t].to(x_0.device).reshape(view_shape)
+        sqrt_one_minus_alpha_bar_t = self.sqrt_one_minus_alpha_bar[t].to(x_0.device).reshape(view_shape)
         
         return sqrt_alpha_bar_t * x_0 + sqrt_one_minus_alpha_bar_t * noise
     

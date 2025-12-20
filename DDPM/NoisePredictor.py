@@ -78,7 +78,7 @@ class Block(nn.Module):
     def __init__(self, in_channels, out_channels, time_dim):
         super().__init__()
         
-        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         # GroupNorm for better training stability
         # Using 32 groups for GroupNorm
         self.gn1 = nn.GroupNorm(32, out_channels)
@@ -86,13 +86,13 @@ class Block(nn.Module):
         # Project time embeddings to match output channel dimension for residual connection
         self.time_mlp = nn.Linear(time_dim, out_channels)
 
-        self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
         self.gn2 = nn.GroupNorm(32, out_channels)
-        
-        
+
+
     def forward(self, x, t):
         # 1. Conv + GN + ReLU
-        x = self.conv1
+        x = self.conv1(x)
         x = self.gn1(x)
         x = torch.relu(x)
         
@@ -100,7 +100,7 @@ class Block(nn.Module):
         t_emb = self.time_mlp(t)
         
         # Expand t_emb to match x's dimensions
-        t_emb = t_emb.unsqueeze(-1)  # [batch_size, out_channels, 1]
+        t_emb = t_emb.view(t_emb.shape[0], t_emb.shape[1], 1, 1) # [batch_size, out_channels, 1, 1]
         x = x + t_emb
         
         # 3. Conv + GN + ReLU
@@ -122,23 +122,23 @@ class DiffUNet(nn.Module):
         # Encoder 
         # 256 -> 128
         self.encoder1 = Block(input_channels, 64, time_dim)
-        self.pool1 = nn.MaxPool1d(2)
+        self.pool1 = nn.MaxPool2d(2)
         
         # 128 -> 64
         self.encoder2 = Block(64, 128, time_dim)
-        self.pool2 = nn.MaxPool1d(2)
+        self.pool2 = nn.MaxPool2d(2)
         
         # 64 -> 32
         self.encoder3 = Block(128, 256, time_dim)
-        self.pool3 = nn.MaxPool1d(2)
+        self.pool3 = nn.MaxPool2d(2)
         
         # 32 -> 16 
         self.encoder4 = Block(256, 512, time_dim)
-        self.pool4 = nn.MaxPool1d(2)
+        self.pool4 = nn.MaxPool2d(2)
         
         # 16 -> 8
         self.encoder5 = Block(512, 512, time_dim)
-        self.pool5 = nn.MaxPool1d(2)
+        self.pool5 = nn.MaxPool2d(2)
         
         # Bottleneck
         # feature map : 512x16x16 -> 1024x16x16
@@ -151,7 +151,7 @@ class DiffUNet(nn.Module):
         self.decoder5 = Block(1024, 512, time_dim)
         
         # 16 -> 32
-        self.up4 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
+        self.up4 = nn.ConvTranspose2d(512, 512, kernel_size=2, stride=2)
         # concat with encoder4 output : 512 + 512 = 1024
         self.decoder4 = Block(1024, 512, time_dim)
         
@@ -189,11 +189,11 @@ class DiffUNet(nn.Module):
         e5 = self.encoder5(p4, t_emb)
         p5 = self.pool5(e5)
         # Bottleneck
-        b = self.bottleneck(p4, t_emb)
+        b = self.bottleneck(p5, t_emb)
         # Decoder
         u5 = self.up5(b)
         d5 = self.decoder5(torch.cat([u5, e5], dim=1), t_emb)
-        u4 = self.up4(b)
+        u4 = self.up4(d5)
         d4 = self.decoder4(torch.cat([u4, e4], dim=1), t_emb)
         u3 = self.up3(d4)
         d3 = self.decoder3(torch.cat([u3, e3], dim=1), t_emb)
