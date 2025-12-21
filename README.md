@@ -6,71 +6,71 @@
 
 HackMD Article : https://hackmd.io/@bGCXESmGSgeAArScMaBxLA/HkcbC12zWe
 
-這是一個基於 **PyTorch** 實現的 **去噪擴散概率模型 (DDPM)**。本專案包含從 2D 玩具資料集 (Swiss Roll) 到複雜影像集 (Oxford Pets) 的簡單實作，旨在展示擴散模型的前向 (Forward) 擴散與反向 (Reverse) 去噪過程。
+This is a **PyTorch** implementation of the **Denoising Diffusion Probabilistic Model (DDPM)**. This project includes simple implementations ranging from 2D toy datasets (Swiss Roll) to complex image datasets (Oxford Pets), aiming to demonstrate the Forward diffusion and Reverse denoising processes of diffusion models.
 
-## 📂 專案結構 (Project Structure)
+## 📂 Project Structure
 
 ```text
 .
-├── DDPM/                   # 核心演算法實作
-│   ├── ForwardProcess.py   # 定義前向加噪過程 (q-sample)
-│   ├── ReverseProcess.py   # 定義反向去噪過程 (p-sample)
-│   └── NoisePredictor.py   # UNet 架構與雜訊預測模型
-├── DDPM_Image.py           # 針對 Oxford Pets 影像資料集的訓練腳本
-├── DDPM_Swiss_Roll.py      # 針對 2D Swiss Roll 資料集的訓練與視覺化腳本
-├── Dataset.py              # 資料加載器 (支援 Oxford-IIIT Pet 貓咪類別)
-├── Plot/                   # 儲存訓練結果與生成的 GIF 動態圖
-├── data/                   # 資料集儲存目錄
-└── README.md               # 專案說明文件
+├── DDPM/                   # Core algorithm implementation
+│   ├── ForwardProcess.py   # Defines the forward diffusion process (q-sample)
+│   ├── ReverseProcess.py   # Defines the reverse denoising process (p-sample)
+│   └── NoisePredictor.py   # UNet architecture and noise prediction model
+├── DDPM_Image.py           # Training script for the Oxford Pets dataset
+├── DDPM_Swiss_Roll.py      # Training and visualization script for the 2D Swiss Roll dataset
+├── Dataset.py              # Data loader (supports Oxford-IIIT Pet cat breeds)
+├── Plot/                   # Directory to store training results and generated GIFs
+├── data/                   # Directory for dataset storage
+└── README.md               # Project documentation
 ```
 
-## 🚀 安裝說明 (Installation)
+## 🚀 Installation
 
-### 1. 複製儲存庫
+### 1. Clone the repository
 ```bash
 git clone https://github.com/jason19990305/Denoising-Diffusion-Probabilistic-Model.git
 cd Denoising-Diffusion-Probabilistic-Model
 ```
 
-### 2. 安裝依賴套件
-建議使用 Conda 或 venv 虛擬環境。本專案主要使用 **PyTorch** 與 **Torchvision**。
+### 2. Install Dependencies
+It is recommended to use a virtual environment (Conda or venv). This project primarily uses **PyTorch** and **Torchvision**.
 
 ```bash
-# 安裝核心依賴
+# Install core dependencies
 pip install torch torchvision numpy matplotlib scikit-learn imageio
 ```
 
-## 🖥️ 使用方法 (Usage)
+## 🖥️ Usage
 
 ### 1. 2D Toy Dataset: Swiss Roll
-這是一個輕量級的實驗，用於直觀理解擴散模型如何將雜訊轉化為特定形狀的分佈。
+A lightweight experiment designed to provide an intuitive understanding of how diffusion models transform noise into a specific distribution shape.
 ```bash
 python DDPM_Swiss_Roll.py
 ```
-*   **前向過程**: 將 Swiss Roll 資料逐漸變為高斯雜訊。
-*   **反向過程**: 從純雜訊中還原出 Swiss Roll 的形狀。
+*   **Forward Process**: Gradually transforms the Swiss Roll data into Gaussian noise.
+*   **Reverse Process**: Reconstructs the Swiss Roll shape from pure noise.
 
 ### 2. Image Generation: Oxford Pets (Cats Only)
-針對真實影像進行訓練，目標是生成貓咪的高解析度影像。
+Training on real images with the goal of generating high-resolution cat images.
 ```bash
 python DDPM_Image.py
 ```
-*   預設使用 `Oxford-IIIT Pet` 資料集中的貓咪品種進行過濾與訓練。
-*   包含 **EMA (Exponential Moving Average)** 機制以提升生成品質。
+*   By default, it uses specific cat breeds from the `Oxford-IIIT Pet` dataset for filtering and training.
+*   Includes the **EMA (Exponential Moving Average)** mechanism to improve generation quality.
 
-## 📊 結果展示 (Results)
+## 📊 Results & Visualization
 
-訓練完成後，生成的影像與動態圖將儲存在 `Plot/` 資料夾中。
+Once training is complete, the generated images and animations will be saved in the `Plot/` directory.
 
-### 2D Swiss Roll 反向生成
-*(範例圖示)*
+### 2D Swiss Roll Reverse Generation
+*(Example Visualization)*
 ![ddpm_reverse_process](Plot/ddpm_reverse_process.gif)
 
-### 影像生成過程 (Cats)
-*(範例圖示)*
+### Image Generation Process (Cats)
+*(Example Visualization)*
 ![ddpm_cat_reverse_process](Plot/ddpm_cat_reverse_process_0.gif)
 
-## 💡 技術要點
-- **UNet Architecture**: 採用自訂的 `DiffUNet` 與時間嵌入 (Time Embedding)。
-- **Beta Schedule**: 使用線性 (Linear) Schedule (`beta_start=1e-4`, `beta_end=0.02`)。
-- **EMA Training**: 透過 `EMA` 模型參數平滑化，使生成的圖像更穩定。
+## 💡 Technical Highlights
+- **UNet Architecture**: Utilizes a custom `DiffUNet` with Time Embeddings.
+- **Beta Schedule**: Implements a Linear Schedule (`beta_start=1e-4`, `beta_end=0.02`).
+- **EMA Training**: Enhances generation stability through Exponential Moving Average of model parameters.
