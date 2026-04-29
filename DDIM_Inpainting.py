@@ -252,17 +252,12 @@ def run_inpainting(
     alphas = (1.0 - torch.linspace(cfg.BETA_START, cfg.BETA_END, cfg.TIMESTEPS)).to(device)
     alpha_bar = torch.cumprod(alphas, dim=0)
 
-    # ── x_init: sample from forward process at t=first_DDIM_step ──────────
-    # We add Gaussian noise to the known-data mean at t=first_DDIM_step,
-    # giving a physically grounded starting noise level near the data manifold.
+    # ── x_init: start from global Gaussian noise ───────────────────────────
+    # This makes the inpainting trajectory visibly begin from the DDIM prior
+    # instead of clustering around the known-data mean.
     ddim_timesteps = build_ddim_timestep_sequence(cfg.TIMESTEPS, cfg.DDIM_STEPS)
     t_start = ddim_timesteps[0]
-    noise_init = torch.randn(N_mask, 2, device=device)
-    x_mean = x_known.mean(dim=0, keepdim=True)          # [1, 2]
-    x_mean_expanded = x_mean.expand(N_mask, -1)         # [N_mask, 2]
-    sqrt_ab_t = torch.sqrt(alpha_bar[t_start])
-    sqrt_1m_ab_t = torch.sqrt((1.0 - alpha_bar[t_start]).clamp(min=1e-8))
-    x_init = sqrt_ab_t * x_mean_expanded + sqrt_1m_ab_t * noise_init
+    x_init = torch.randn(N_mask, 2, device=device)
 
     ddim_timesteps = build_ddim_timestep_sequence(cfg.TIMESTEPS, cfg.DDIM_STEPS)
     step_size = cfg.TIMESTEPS // cfg.DDIM_STEPS
@@ -292,7 +287,10 @@ def run_inpainting(
         "bar_e_norm_list": [],
         "snr_scaling_list": [],
         "x_cur_frames": [],
+        "frame_t_list": [],
     }
+    history["x_cur_frames"].append(x_cur.detach().cpu().clone())
+    history["frame_t_list"].append(t_start)
 
     print(f"[Inpainting] {len(ddim_timesteps)} DDIM steps | {N_mask} masked points")
 
@@ -321,6 +319,7 @@ def run_inpainting(
         history["bar_e_norm_list"].append(info["bar_e_norm"])
         history["snr_scaling_list"].append(info["blend_lambda"])
         history["x_cur_frames"].append(x_cur.detach().cpu().clone())
+        history["frame_t_list"].append(t)
 
     return x_cur.detach(), history
 
@@ -452,7 +451,8 @@ def create_inpainting_gif(
         ax.set_xlim(-2.5, 2.5)
         ax.set_ylim(-2.5, 2.5)
         step_num = i * step_interval
-        t_val = history["t_list"][step_num] if step_num < len(history["t_list"]) else 0
+        frame_t_list = history.get("frame_t_list", history["t_list"])
+        t_val = frame_t_list[step_num] if step_num < len(frame_t_list) else 0
         ax.set_title(f"PID-Guided DDIM Inpainting  t={t_val}", fontsize=11)
         ax.grid(True, linestyle="--", alpha=0.3)
         ax.legend(fontsize=8)
