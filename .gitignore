@@ -8,17 +8,45 @@ __pycache__/
 *$py.class
 *.so
 .Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
+.venv/
 venv/
 env/
 ENV/
+virtualenv/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Python packaging/build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Local logs and experiment outputs
+logs/
+*.log
+debug-*.log
+results/
+runs/
+wandb/
+checkpoints/
 
 # OS
 .DS_Store

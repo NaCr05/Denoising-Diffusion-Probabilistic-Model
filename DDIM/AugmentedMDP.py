@@ -124,15 +124,9 @@ class AugmentedMDP:
             x_nearest = self.x_known[nn_idx]
 
         #x_mask_corrected = (1.0 - blend_lambda) * x_mask_ddim + blend_lambda * x_nearest
-
-    
         
-    
-        # Rebuild full state, preserving the known-point anchors in x_ddim.
-        x_next_full = x_ddim.clone()
-        x_next_full[self.mask_indices] = x_mask_corrected 
 
-        # ── Step 4: Boundary loss on corrected masked region ────────────
+          # ── Step 4: Boundary loss on corrected masked region ────────────
         xhat_0_mask = xhat_0[self.mask_indices]   # [N_mask, 2]
         loss_boundary = self._compute_boundary_loss(xhat_0_mask)
         r_t = float(-loss_boundary.item()) if loss_boundary is not None else 0.0
@@ -144,8 +138,16 @@ class AugmentedMDP:
         a_t_dummy, u_t_dummy, snr_lock, bar_e_t, D_t = self.pid.compute_action(
             e_t_scalar, ab_t, ab_prev_for_pid
         )
-
+    
         x_mask_corrected = x_mask_ddim + a_t_dummy
+    
+        # Rebuild full state, preserving the known-point anchors in x_ddim.
+        x_next_full = x_ddim.clone()
+        x_next_full[self.mask_indices] = x_mask_corrected 
+
+      
+
+        
 
         # ── Step 6: Build info dict ─────────────────────────────────────
         info = {
